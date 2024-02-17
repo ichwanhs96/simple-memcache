@@ -27,9 +27,9 @@ This strategy is straight forward, `in case of memory limit exceeded, release th
 This simple memory cache lib interface will contains 
 | Method | Parameters | Value return | 
 | ------ | ---------- | ------------ |
-| Set    | key (string), value (string) | boolean |
-| Get    | key (string) | key (string), value (string) |
-| Delete | key (string) | boolean (`true` for success, `false` for failure) |
+| Set    | key (`string, required`), value (`string, required`) | boolean |
+| Get    | key (`string, required`) | key (`string, required`), value (string) |
+| Delete | key (`string, required`) | boolean (`true` for success, `false` for failure) |
 
 ## Error codes
 | Error Code | Description |
@@ -37,12 +37,25 @@ This simple memory cache lib interface will contains
 | N/A | N/A |
 
 ## Lib Initialization
-To initialize the library, the lib will takes input of `memory limit as int in bytes` that you want to allocate and throw error if memory allocation
+To initialize the library, the lib will takes input of `memory limit as int in bytes` that you want to allocate and throw error if memory allocation is exceeding device constraint. 
 
+Second parameters is a string to determine which algorithm to used, defaul will be `FIFO`
+
+| Method | Parameters | Value return | 
+| ------ | ---------- | ------------ |
+| Initialization   | memory (`int, required`), algorithm (`string, optional`) | object |
+
+Example of lib initialization
 ```
-var simpleMemCache = new Memcache(10000)
+var simpleMemCache = new Memcache(10000, 'FIFO')
 // initiate memcache class and allocate 10,000 bytes of memory for memcache
 ```
+
+### Error codes
+| Error Code | Description |
+| ---------- | ----------- |
+| MEMORY_CONSTRAINT_ERROR | Allocated memory is either larger than device limit or lower than allowed |
+| ALGORITHM_NOT_FOUND_ERROR | Selected algorithm is not found, available algorithm (FIFO, LRU) |
 
 # Supported Languages
 This simple memory cache lib is written and available for these languages and stored in different branch of this repository
