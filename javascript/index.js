@@ -1,5 +1,5 @@
 // strategy create interface set & get
-// use map to store the data
+// use array to store the data (key, value, accessCounter (for LRU algorithm))
 // need to think around the memory management
 
 // make it global so it can be accessed from anywhere
@@ -8,31 +8,87 @@
 const sizeof = require('object-sizeof')
 
 const Cache = class{
-    constructor(maxMemoryLimit) {
+    constructor(maxMemoryLimit, algorithm = 'FIFO') {
         this.maxMemoryLimit = maxMemoryLimit;
+        this.algorithm = algorithm;
         this.map = new Map();
     }
 
-    releaseMemoryUntilSufficient(bytes) {
-        while (this.maxMemoryLimit - sizeof(this.map) < bytes || sizeof(this.map) <= 0) {
-            // keep releasing first entry
-            this.map.delete(this.map.keys().next().value);
+    releaseMemoryUntilSufficient(map, bytes) {
+        let arrayOfDeletedCache = [];
+        while (this.maxMemoryLimit - sizeof(map) < bytes || sizeof(map) <= 0) {
+            if (this.algorithm == 'FIFO') {
+                // keep releasing first entry until memory sufficient
+                let key = map.keys().next().value;
+                let cache = map.get(key);
+
+                if (map.delete(key)) {
+                    arrayOfDeletedCache.push(cache);
+                }
+            } else if (this.algorithm == 'LRU') {
+                // set the first key as lowest key pivot
+                let lowestAccessedCacheKey = map.keys().next().value;
+                // find the lowest usages and release from map
+                map.forEach((value, key) => {
+                    if (map.get(lowestAccessedCacheKey).accessCounter > value.accessCounter) {
+                        lowestAccessedCacheKey = key;
+                    }
+                });
+
+                let cache = map.get(lowestAccessedCacheKey);
+
+                if (map.delete(lowestAccessedCacheKey)) {
+                    arrayOfDeletedCache.push(cache);
+                }
+            }
         }
+        return arrayOfDeletedCache;
     }
 
-    set(id, values) {
-        this.releaseMemoryUntilSufficient(sizeof(values));
+    set(key, value) {
+        if (sizeof(value) > this.maxMemoryLimit) {
+            return false;
+        }
+
+        this.releaseMemoryUntilSufficient(this.map, sizeof(value));
 
         try {
-            this.map.set(id, values)
+            if (this.algorithm == 'FIFO') {
+                this.map.set(key, value)
+            } else if (this.algorithm == 'LRU') {
+                this.map.set(key, {
+                    value: value,
+                    accessCounter: 0
+                });
+            }
             return true
         } catch (e) {
             return false
         }
     }
     
-    get(id) {
-        return this.map.get(id);
+    get(key) {
+        if (this.algorithm == 'FIFO') {
+            return {
+                key: key,
+                value: this.map.get(key)
+            }
+        } else if (this.algorithm == 'LRU') {
+            let cache = this.map.get(key);
+            if (cache != undefined) {
+                cache.accessCounter += 1;
+                return {
+                    key: key,
+                    value: cache.value
+                }
+            }
+
+            return undefined;
+        }
+    }
+
+    delete(key) {
+        return this.map.delete(key);
     }
 }
 
