@@ -15,13 +15,16 @@ There are multiple ways and strategy to cache, the limitation of memory caching 
 ## First in first out (FIFO)
 The simplest strategy, the idea is `first cached value will be first out in case of memory limit exceeded`
 
-## Least recently used (LRU)
+## Least frequently used (LFU)
 This caching strategy used the idea of `any cached value that least used, will be released in case of memory limit exceeded`. Let's take a step back and understand the main idea of caching, caching is crucial because it is used to cache value that oftenly access by user thus increasing the performance of the systems by reducing steps, so this strategy is oftenly the best strategy for caching.
+
+## Least recently used (LRU)
+Similar to LFU, this strategy using time as it's component, the definition is `any cached value not used for a long time, will be released in case of memory limit exceeded`
 
 ## Time based
 This strategy is straight forward, `in case of memory limit exceeded, release the expired cached value`. In case no value expired, there are 2 options
 1. return error with message cache full
-2. combine with other strategy (e.g. FIFO or LRU)
+2. combine with other strategy (e.g. FIFO or LFU or LRU)
 
 # Application Interface
 This simple memory cache lib interface will contains 
@@ -55,7 +58,7 @@ var simpleMemCache = new Memcache(10000, 'FIFO')
 | Error Code | Description |
 | ---------- | ----------- |
 | MEMORY_CONSTRAINT_ERROR | Allocated memory is either larger than device limit or lower than allowed |
-| ALGORITHM_NOT_FOUND_ERROR | Selected algorithm is not found, available algorithm (FIFO, LRU) |
+| ALGORITHM_NOT_FOUND_ERROR | Selected algorithm is not found, available algorithm (FIFO, LFU, LRU) |
 
 # Supported Languages
 This simple memory cache lib is written and available for these languages and stored in different branch of this repository

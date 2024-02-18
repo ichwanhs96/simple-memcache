@@ -25,15 +25,15 @@ describe('Cache test', () => {
         })
     });
 
-    describe('LRU algorithm', () => {
+    describe('LFU algorithm', () => {
         it('should be able to set the value', () => {
-            const cache = new Cache(100, 'LRU');
+            const cache = new Cache(100, 'LFU');
             const res = cache.set('a', '123');
             expect(res).toBe(true);
         })
     
         it('should be able to set the value though the memory limit exceeded', () => {
-            const cache = new Cache(80, 'LRU');
+            const cache = new Cache(80, 'LFU');
             for (let i = 0; i < 10; i++) {
                 cache.set(i, 'testvalueformemorylimit');
             }
@@ -43,13 +43,13 @@ describe('Cache test', () => {
         })
     
         it('should be able to get the value', () => {
-            const cache = new Cache(100, 'LRU');
+            const cache = new Cache(100, 'LFU');
             const res = cache.set('a', '123');
             expect(cache.get('a').value).toBe('123');
         })
 
         it('should release the least usage cache in the map', () => {
-            const cache = new Cache(100, 'LRU');
+            const cache = new Cache(100, 'LFU');
             for (let i = 0; i < 10; i++) {
                 cache.set(i, 'testvalueformemorylimit');
             }
