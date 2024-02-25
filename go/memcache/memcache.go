@@ -2,12 +2,16 @@ package memcache
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"unsafe"
 )
 
 type CacheItem struct {
+	value         interface{}
+	accessedTimes int
+}
+
+type CacheItemResponse struct {
 	key   string
 	value interface{}
 }
@@ -16,7 +20,7 @@ var MemoryLimit int = 0
 
 // available alogirthm is "FIFO", "LFU", "LRU"
 var Algorithm string = ""
-var Cache map[string]interface{} = make(map[string]interface{})
+var Cache map[string]CacheItem = make(map[string]CacheItem)
 
 func Initialize(memoryLimit int, algorithm string) error {
 	if memoryLimit <= 0 {
@@ -29,25 +33,44 @@ func Initialize(memoryLimit int, algorithm string) error {
 	return nil
 }
 
+func getLeastUsedCacheKey() string {
+	var lowestAccessedKey string
+	for k := range Cache {
+		if lowestAccessedKey == "" {
+			lowestAccessedKey = k
+		}
+
+		if Cache[k].accessedTimes < Cache[lowestAccessedKey].accessedTimes {
+			lowestAccessedKey = k
+		}
+
+		break
+	}
+
+	return lowestAccessedKey
+}
+
 func clearCache(bytes int) error {
 	// TODO: memory foot print of map is not working correctly
-	// this only returns the memory allocation for the map it self but not the values - meaning this always returning 8 bytes
+	// function unsafe.Sizeof only returns the memory allocation for the map it self but not the values - meaning this always returning 8 bytes
 	var memUsed = unsafe.Sizeof(Cache)
-	fmt.Printf("Size of memory limit: %d bytes and map: %d bytes and desired inserted bytes: %d\n", MemoryLimit, memUsed, bytes)
-	fmt.Println("Cache size: ", Cache)
 
 	for MemoryLimit-int(memUsed) < bytes {
 		// keep removing the first element in map (FIFO algorithm)
-		for k := range Cache {
-			delete(Cache, k)
-			break
+		if Algorithm == "FIFO" {
+			for k := range Cache {
+				delete(Cache, k)
+				break
+			}
+		} else if Algorithm == "LFU" {
+			delete(Cache, getLeastUsedCacheKey())
 		}
 	}
 
 	return nil
 }
 
-func Set(key string, value interface{}) (cache CacheItem, err error) {
+func Set(key string, value interface{}) (cache CacheItemResponse, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("cache insertion failed")
@@ -56,22 +79,28 @@ func Set(key string, value interface{}) (cache CacheItem, err error) {
 
 	err = clearCache(int(reflect.ValueOf(value).Type().Size()))
 
-	Cache[key] = value
-	return CacheItem{
+	cacheItem := CacheItem{
+		value:         value,
+		accessedTimes: 0,
+	}
+
+	Cache[key] = cacheItem
+
+	return CacheItemResponse{
 		key:   key,
 		value: value,
 	}, nil
 }
 
-func Get(key string) CacheItem {
+func Get(key string) CacheItemResponse {
 	if val, ok := Cache[key]; ok {
-		return CacheItem{
+		return CacheItemResponse{
 			key:   key,
-			value: val,
+			value: val.value,
 		}
 	}
 
-	return CacheItem{}
+	return CacheItemResponse{}
 }
 
 func Delete(key string) bool {

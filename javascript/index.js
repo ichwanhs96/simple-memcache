@@ -1,5 +1,5 @@
 // strategy create interface set & get
-// use array to store the data (key, value, accessCounter (for LFU algorithm), lastAccess (for LRU algorithm))
+// use array to store the data (key, value, accessedTimes (for LFU algorithm), lastAccess (for LRU algorithm))
 // need to think around the memory management
 
 // make it global so it can be accessed from anywhere
@@ -30,7 +30,7 @@ const Cache = class{
                 let lowestAccessedCacheKey = map.keys().next().value;
                 // find the lowest usages and release from map
                 map.forEach((value, key) => {
-                    if (map.get(lowestAccessedCacheKey).accessCounter > value.accessCounter) {
+                    if (map.get(lowestAccessedCacheKey).accessedTimes > value.accessedTimes) {
                         lowestAccessedCacheKey = key;
                     }
                 });
@@ -58,7 +58,7 @@ const Cache = class{
             } else if (this.algorithm == 'LFU') {
                 this.map.set(key, {
                     value: value,
-                    accessCounter: 0
+                    accessedTimes: 0
                 });
             }
             return true
@@ -76,7 +76,7 @@ const Cache = class{
         } else if (this.algorithm == 'LFU') {
             let cache = this.map.get(key);
             if (cache != undefined) {
-                cache.accessCounter += 1;
+                cache.accessedTimes += 1;
                 return {
                     key: key,
                     value: cache.value
